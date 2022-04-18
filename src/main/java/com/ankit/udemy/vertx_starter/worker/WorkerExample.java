@@ -1,6 +1,7 @@
 package com.ankit.udemy.vertx_starter.worker;
 
 import io.vertx.core.AbstractVerticle;
+import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import org.slf4j.Logger;
@@ -17,12 +18,23 @@ public class WorkerExample extends AbstractVerticle {
 
   @Override
   public void start(Promise<Void> startPromise) throws Exception {
-
+    vertx.deployVerticle(new WorkerVerticle(),
+      new DeploymentOptions().setWorker(true)
+        .setWorkerPoolSize(1)
+        .setWorkerPoolName("my-worker verticle")
+    );
     startPromise.complete();
+    executeBlockingCode();
+
+  }
+
+  private void executeBlockingCode() {
     vertx.executeBlocking(event-> {
       LOG.debug("Executing blocking code");
       try {
         Thread.sleep(5000);
+        event.complete();
+        //event.fail("Forced Failed");
       } catch (InterruptedException e) {
         LOG.error("Failed", e);
         event.fail(e);
@@ -36,6 +48,5 @@ public class WorkerExample extends AbstractVerticle {
         LOG.debug("Blocking called failed due to", result.cause());
       }
     });
-
   }
 }
